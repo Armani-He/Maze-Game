@@ -79,6 +79,6 @@ DELAY_TIME = 50
 SKILL_EXECUTION_TIME_LIST = ["right_away", "before_attack", "after_attack", "before_defense", "after_defense"]
 
 
-# seed = random.randint(0, 1000)
+# my_seed = random.randint(0, 1000)
 my_seed=42
 random.seed(my_seed)

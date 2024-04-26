@@ -19,7 +19,7 @@ class Player():
         self.maximum_life = self.life
         self.attack = 5
         self.defense = 1
-        self.coin = 50
+        self.coin = 0
         self.step = 0
         self.fame = 0
         self.attack_dice = Dice(1, 6)

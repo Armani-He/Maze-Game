@@ -738,7 +738,7 @@ def show_enemy_damage(window:pygame.Surface, enemy_damage):
     window.blit(text, text_rect)
     pygame.display.update()
          
-def handle_helper_effect(window:pygame.Surface, helper_dict:dict[str,Helper], enemy:Enemy, player:Player, execution_time:str):
+def handle_helper_effect(window:pygame.Surface, helper_dict:dict[str,Helper], enemy:Enemy, player:Player, execution_time:str, mode:str):
     """
     Handle the effect of a helper's skill during battle.
 
@@ -755,7 +755,7 @@ def handle_helper_effect(window:pygame.Surface, helper_dict:dict[str,Helper], en
     for helper in helper_dict.values():
         if helper.activate and helper.skill_execution_time == execution_time:
             use_skill_during_battle(player, enemy, window, helper)
-            show_helper(window, helper_dict)
+            show_helper(window, helper_dict, player, mode)
         if enemy.life <= 0:
             update_player_attribute_after_winning_battle(player, enemy)
             update_helper_activate(helper_dict)
@@ -804,12 +804,14 @@ def battle(player:Player, enemy:Enemy, window:pygame.Surface, helper_dict:dict[s
     
     # Display turn icon, player and enemy attribute icons, and their values
     show_turn_icon(window, turn)
+    show_helper(window, helper_dict, player, mode)
     show_enemy_attribute_icon(window)
     show_enemy_attribute_value(window, enemy)
     show_player_attribute_icon_in_battle(window)
     show_player_attribute_value_in_battle(window, player)
     
     pygame.display.update()
+    pygame.image.save(window, "./output/Battle.jpeg")
     
     
     running = True 
@@ -822,7 +824,7 @@ def battle(player:Player, enemy:Enemy, window:pygame.Surface, helper_dict:dict[s
                 if event.key == pygame.K_r and turn == "attack":
                     
                     # Handle the effect of helper skill before player's attack
-                    result = handle_helper_effect(window, helper_dict, enemy, player, "before_attack")
+                    result = handle_helper_effect(window, helper_dict, enemy, player, "before_attack", mode)
                     if result == "win":
                         return
                         
@@ -869,7 +871,7 @@ def battle(player:Player, enemy:Enemy, window:pygame.Surface, helper_dict:dict[s
                         return 
                     
                     # Handle the effect of helper skill after player's attack
-                    result = handle_helper_effect(window, helper_dict, enemy, player, "after_attack")
+                    result = handle_helper_effect(window, helper_dict, enemy, player, "after_attack", mode)
                     if result == "win":
                         return
                     
@@ -878,7 +880,7 @@ def battle(player:Player, enemy:Enemy, window:pygame.Surface, helper_dict:dict[s
                     
                 elif event.key == pygame.K_r and turn == "defense":
                     # Handle the effect of helper skill before enemy's attack
-                    result = handle_helper_effect(window, helper_dict, enemy, player, "before_defense")
+                    result = handle_helper_effect(window, helper_dict, enemy, player, "before_defense", mode)
                     if result == "win":
                         return
                     
@@ -915,7 +917,7 @@ def battle(player:Player, enemy:Enemy, window:pygame.Surface, helper_dict:dict[s
                     player.life -= enemy_damage
                     
                     # Handle the effect of helper skill after enemy's attack
-                    result = handle_helper_effect(window, helper_dict, enemy, player, "after_defense")
+                    result = handle_helper_effect(window, helper_dict, enemy, player, "after_defense", mode)
                     if result == "win":
                         return
                     
@@ -955,12 +957,12 @@ def battle(player:Player, enemy:Enemy, window:pygame.Surface, helper_dict:dict[s
                         helper.available = False
                         player.coin -= helper.cost
                         show_player_attribute_value(window, player)
-                        show_helper(window, helper_dict)
+                        show_helper(window, helper_dict, player, mode)
                         show_helper_effect(window, helper)
                         pygame.display.update()
                         
                         # Handle the effect of helper skill right away
-                        result = handle_helper_effect(window, helper_dict, enemy, player, "right_away")
+                        result = handle_helper_effect(window, helper_dict, enemy, player, "right_away", mode)
                         if result == "win":
                             return      
                          
@@ -1060,7 +1062,7 @@ def show_player_attribute_icon(window:pygame.Surface):
     for icon, image in images.items():
         window.blit(image, positions[icon])
         
-def show_helper(window:pygame.Surface, helper_dict:dict[str,Helper]):
+def show_helper(window:pygame.Surface, helper_dict:dict[str,Helper], player:Player, mode:str):
     """
     Display helper portraits and their activation status on the game window.
 
@@ -1072,7 +1074,7 @@ def show_helper(window:pygame.Surface, helper_dict:dict[str,Helper]):
     images = {}
 
     for helper in helper_list:
-        if helper_dict[helper].available:
+        if check_helper_validate(player, mode, helper_dict[helper]):
             image_path = f"assets/image/portrait/{helper}.png"
         else:
             image_path = f"assets/image/portrait/bw_{helper}.png"
@@ -1136,10 +1138,10 @@ def create_helper():
     helper_dict = {}
     helper_dict["Zoro"] = Helper("Zoro", 10, skill.never_die, 3, ["game", "battle"], "after_defense")
     helper_dict["Sanji"] = Helper("Sanji", 8, skill.huge_damage, 1, ["battle"], "right_away")
-    helper_dict["Nami"] = Helper("Nami", 8, skill.half_the_attack, 3, ["battle"], "before_attack")
+    helper_dict["Nami"] = Helper("Nami", 8, skill.remove_defense, 5, ["battle"], "before_attack")
     helper_dict["Usopp"] = Helper("Usopp", 6, skill.escape, 1, ["battle"], "right_away")
     helper_dict["Chopper"] = Helper("Chopper", 3, skill.add_life, 10, ["game", "battle"], "before_attack")
-    helper_dict["Brook"] = Helper("Brook", 7, skill.remove_defense, 5, ["battle"], "before_attack")
+    helper_dict["Brook"] = Helper("Brook", 7, skill.half_the_attack, 3, ["battle"], "before_attack")
     return helper_dict
 
 def create_helper_rect_dict():
@@ -1401,7 +1403,7 @@ def handle_player_interaction(player, helper_dict, helper_rect_dict, item_dict, 
     for helper in helper_dict.values():
         if helper.activate and "game" in helper.allow_mode:
             use_skill_in_game_mode(player, window, helper)
-            show_helper(window, helper_dict)
+            show_helper(window, helper_dict, player, "game")
     
     # Handle interaction with items
     handle_item_interaction(player, item_dict)
@@ -1535,7 +1537,7 @@ def play_game(window:pygame.Surface, block_in_maze):
     show_enemy_in_maze(enemy_dict, small_maze, window, player)
     show_player_attribute_icon(window)
     show_player_attribute_value(window, player)
-    show_helper(window, helper_dict)
+    show_helper(window, helper_dict, player, "game")
     show_helper_cost(window, helper_dict)
 
     # Show exchange block and input box
@@ -1546,6 +1548,7 @@ def play_game(window:pygame.Surface, block_in_maze):
 
     # Show the initial screen
     pygame.display.update()
+    pygame.image.save(window, "./output/Initial start.jpeg")
     
     # Print the block number after randomize to terminal
     maze.show_block_number()
@@ -1601,6 +1604,7 @@ def play_game(window:pygame.Surface, block_in_maze):
                             
                     show_text_in_button(window, input_box_surface, input_text, (INPUT_BOX_RECT_POS[0], INPUT_BOX_RECT_POS[1]))
                     pygame.display.update()
+                    pygame.image.save(window, "./output/After Exchange.jpeg")
                     
                 elif mode == "game":
                     # Initialize variables for player movement
@@ -1661,6 +1665,7 @@ def play_game(window:pygame.Surface, block_in_maze):
                                 show_items_in_maze(item, small_maze, window, player, item_type)
                             show_enemy_in_maze(enemy_dict, maze, window, player)
                             show_enemy_in_maze(enemy_dict, small_maze, window, player)
+                            show_helper(window, helper_dict, player, "game")
                             pygame.display.update()
                             
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -1681,6 +1686,7 @@ def play_game(window:pygame.Surface, block_in_maze):
                     show_enemy_in_maze(enemy_dict, small_maze, window, player)
                     show_text_in_button(window, exchange_block_button_surface, "Go Back", (EXCHANGE_BLOCK_BUTTON_RECT_POS[0], EXCHANGE_BLOCK_BUTTON_RECT_POS[1]))
                     pygame.display.update()
+                    pygame.image.save(window, "./output/Exchange Mode.jpeg")
                     
                 elif exchange_block_rect.collidepoint(event.pos) and mode == "exchange_block":
                     # Return to game mode from block exchange mode
@@ -1705,7 +1711,7 @@ def play_game(window:pygame.Surface, block_in_maze):
                         
                         # Update player attibute and show helper effect
                         show_player_attribute_value(window, player)
-                        show_helper(window, helper_dict)
+                        show_helper(window, helper_dict, player, "game")
                         show_helper_effect(window, helper)
                         
                         # Update the screen

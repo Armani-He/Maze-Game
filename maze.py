@@ -122,7 +122,8 @@ class Maze(Cell):
                 
     def wrap_around(self, pos, direction):
         """
-        Wrap the position around the maze if it goes out of bounds.
+        Get the new position for pos + direction and wrap the new position around the maze 
+        if it goes out of bounds.
 
         Args:
             pos (tuple): The current position (block_x, block_y, cell_x, cell_y).
